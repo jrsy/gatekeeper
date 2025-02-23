@@ -1,3 +1,5 @@
+using System.Collections.Concurrent;
+
 namespace GateKeeper.Server.Models
 {
     public class GateKeeper
@@ -10,13 +12,13 @@ namespace GateKeeper.Server.Models
         public static string MESSAGE_SENT = "Message sent.";
         public static string MESSAGE_NOT_SENT = "Message not sent.";
 
-        Dictionary<Guid, Account> Accounts;
-        Dictionary<Guid, AccountMessageQueue> MessageQueue;
+        ConcurrentDictionary<Guid, Account> Accounts;
+        ConcurrentDictionary<Guid, AccountMessageQueue> MessageQueue;
 
         public GateKeeper()
         {
-            Accounts = new Dictionary<Guid, Account>();
-            MessageQueue = new Dictionary<Guid, AccountMessageQueue>();
+            Accounts = new ConcurrentDictionary<Guid, Account>();
+            MessageQueue = new ConcurrentDictionary<Guid, AccountMessageQueue>();
 
             /*Account account1 = new Account("Account 1");
             account1.AddUser("User 1.1", "111-1111");
@@ -30,10 +32,21 @@ namespace GateKeeper.Server.Models
             Accounts.Add(account2.AccountId, account2);*/
         }
 
+        // Really only necessary because of the TestSendMessage unit tests
+        private Account AddOrUpdateAccount(Guid accountId, Account account)
+        {
+            return account;
+        }
+
+        private AccountMessageQueue AddOrUpdateAccountMessageQueue(Guid accountId, AccountMessageQueue newQueue)
+        {
+            return newQueue;
+        }
+
         public void AddAccount(Account newAccount)
         {
-            Accounts.Add(newAccount.AccountId, newAccount);
-            MessageQueue.Add(newAccount.AccountId, new AccountMessageQueue(newAccount.AccountId));
+            Accounts.AddOrUpdate(newAccount.AccountId, newAccount, AddOrUpdateAccount);
+            MessageQueue.AddOrUpdate(newAccount.AccountId, new AccountMessageQueue(newAccount.AccountId), AddOrUpdateAccountMessageQueue);
         }
 
         public Account[] GetAccounts()

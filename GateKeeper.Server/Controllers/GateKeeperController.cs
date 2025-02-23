@@ -29,6 +29,14 @@ public class GateKeeperController : ControllerBase
     }
 
     [HttpPost]
+    [Route("testinitialize")]
+    public int Post()
+    {
+        _gateKeeper = new Models.GateKeeper();
+        return StatusCodes.Status200OK;
+    }
+
+    [HttpPost]
     [Route("addaccount")]
     public int Post(Account account)
     {

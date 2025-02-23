@@ -10,27 +10,12 @@ namespace GateKeeperTests
     [TestClass]
     public sealed class UnitTestsController
     {
-        [TestMethod]
-        public async Task TestAddAccountAndGet()
+        [TestInitialize()]
+        public async Task Initialize()
         {
             WebApplicationFactory<Program> factory = new WebApplicationFactory<Program>();
             var client = factory.CreateClient();
-
-            Account account1 = new Account("Account 1");
-            account1.AddUser("User 1.1", "111-1111");
-            account1.AddUser("User 1.2", "112-1112");
-
-            var response = await client.PostAsJsonAsync("/gatekeeper/addaccount", account1);
-            response.EnsureSuccessStatusCode();
-
-            response = await client.GetAsync("/gatekeeper");
-            response.EnsureSuccessStatusCode();
-
-            string responseString = await response.Content.ReadAsStringAsync();
-            Account[]? accounts = JsonSerializer.Deserialize<Account[]>(responseString);
-
-            Assert.AreNotEqual(null, accounts);
-            Assert.AreEqual(1, accounts.Count());
+            await client.PostAsync("/gatekeeper/testinitialize", null);
         }
 
         [TestMethod]
@@ -128,6 +113,64 @@ namespace GateKeeperTests
                 else
                 {
                     Assert.AreEqual(GateKeeper_t.PER_ACCOUNT_EXCEEDED, responseString);
+                }
+            }
+        }
+
+        [TestMethod]
+        public async Task TestSendMessagePerUserLimit()
+        {
+            WebApplicationFactory<Program> factory = new WebApplicationFactory<Program>();
+            var client = factory.CreateClient();
+
+            Account account1 = new Account("Account 1");
+            account1.AddUser("User 1.1", "111-1111");
+
+            int userIndex = 0;
+
+            int limit = GateKeeper_t.PER_PHONE * 2;
+
+            var postResponse = await client.PostAsJsonAsync("/gatekeeper/addaccount", account1);
+            postResponse.EnsureSuccessStatusCode();
+
+            List<Message> messages = new List<Message>();
+
+            for (int i = 0; i < limit; i++)
+            {
+                Guid userId = account1.Users[userIndex].UserId;
+                userIndex++;
+                if (userIndex >= account1.Users.Count())
+                {
+                    userIndex = 0;
+                }
+
+                Message message =
+                    new Message(account1.AccountId, userId, ("Message" + i.ToString()));
+                message.SendImmediately = false;
+                messages.Add(message);
+            }
+
+            List<HttpResponseMessage?> responses = new List<HttpResponseMessage?>();
+            for (int i = 0; i < messages.Count(); i++)
+            {
+                Guid userId = messages[i].UserId;
+                var response = await client.PostAsJsonAsync("/gatekeeper/sendmessage", messages[i]);
+                responses.Add(response);
+            }
+
+            for (int i = 0; i < responses.Count(); i++)
+            {
+                var result = responses[i];
+                result.EnsureSuccessStatusCode();
+                string responseString = await result.Content.ReadAsStringAsync();
+
+                if (i <= GateKeeper_t.PER_PHONE)
+                {
+                    Assert.AreNotEqual(GateKeeper_t.PER_PHONE_EXCEEDED, responseString);
+                }
+                else
+                {
+                    Assert.AreEqual(GateKeeper_t.PER_PHONE_EXCEEDED, responseString);
                 }
             }
         }

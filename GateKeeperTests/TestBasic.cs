@@ -27,6 +27,7 @@ namespace GateKeeperTests
             };
 
             Account[] testResults = testGateKeeper.GetAccounts();
+            testResults = testResults.OrderBy(a => a.AccountName).ToArray();
             for (int i = 0; i < testResults.Count(); i++)
             {
                 Account expectedResult = expectedResults[i];
