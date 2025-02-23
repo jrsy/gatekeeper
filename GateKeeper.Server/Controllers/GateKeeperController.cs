@@ -1,6 +1,5 @@
 using GateKeeper.Server.Models;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Principal;
 
 namespace GateKeeper.Server.Controllers;
 
@@ -9,12 +8,12 @@ namespace GateKeeper.Server.Controllers;
 public class GateKeeperController : ControllerBase
 {
     private readonly ILogger<GateKeeperController> _logger;
-    private GateKeeper _gateKeeper;
+    private Models.GateKeeper _gateKeeper;
 
     public GateKeeperController(ILogger<GateKeeperController> logger)
     {
         _logger = logger;
-        _gateKeeper = new GateKeeper();
+        _gateKeeper = new Models.GateKeeper();
     }
 
     public void CallImaginaryExternalAPI(Message message)
@@ -49,6 +48,7 @@ public class GateKeeperController : ControllerBase
             }
             else
             {
+                CallImaginaryExternalAPI(firstMessageUp);
                 response = "Message sent.";
             }
         }

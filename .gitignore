@@ -31,4 +31,7 @@ gatekeeper.client/.idea
 *.tsbuildinfo
 gatekeeper.client/obj
 GateKeeper.Server/obj/
+GateKeeper.Server/bin/
+GateKeeperTests/bin/
+GateKeeperTests/obj/
 .vs/

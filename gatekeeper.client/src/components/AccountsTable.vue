@@ -72,7 +72,7 @@
           selectAccount(accountId) {
             this.selectedAccount = this.accounts.find(a => a.accountId === accountId);
             this.users = this.selectedAccount.users;
-            console.log(this.users);
+            this.selectedUser = null;
           },
           selectUser(userId) {
             this.selectedUser = this.users.find(u => u.userId === userId);

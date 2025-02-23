@@ -1,11 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.13.35818.85 d17.13
+VisualStudioVersion = 17.13.35818.85
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{54A90642-561A-4BB1-A94E-469ADEE60C69}") = "gatekeeper.client", "gatekeeper.client\gatekeeper.client.esproj", "{F4E27EB4-1BD5-49B0-BB14-95411368B183}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GateKeeper.Server", "GateKeeper.Server\GateKeeper.Server.csproj", "{67035B6E-9381-4E4C-919F-F6F9FF920CF9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GateKeeperTests", "GateKeeperTests\GateKeeperTests.csproj", "{0721706B-D0FD-4080-9CD8-CF87551E53FB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -23,6 +25,10 @@ Global
 		{67035B6E-9381-4E4C-919F-F6F9FF920CF9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{67035B6E-9381-4E4C-919F-F6F9FF920CF9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{67035B6E-9381-4E4C-919F-F6F9FF920CF9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0721706B-D0FD-4080-9CD8-CF87551E53FB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0721706B-D0FD-4080-9CD8-CF87551E53FB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0721706B-D0FD-4080-9CD8-CF87551E53FB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0721706B-D0FD-4080-9CD8-CF87551E53FB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

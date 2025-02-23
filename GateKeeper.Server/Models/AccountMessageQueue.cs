@@ -17,15 +17,15 @@ namespace GateKeeper.Server.Models
 
         public string AttemptSendSMSMessage(Guid accountId, Guid userId, Message message)
         {
-            if (PendingMessagesPerUser.Count > GateKeeper.PER_ACCOUNT
+            int pendingForWholeAccount =
+                MessageTimes
+                .Where(mt => message.Timestamp.Subtract(mt.Value).TotalSeconds < 1)
+                .Select(mt => mt.Key).Count();
+
+            if (pendingForWholeAccount > GateKeeper.PER_ACCOUNT
                 && MessageTimes.Any())
             {
-                int pendingForWholeAccount =
-                    MessageTimes
-                    .Where(mt => message.Timestamp.Subtract(mt.Value).Seconds < 1)
-                    .Select(mt => mt.Key).Count();
-
-                return "Per Account maximum exceeded";
+                return GateKeeper.PER_ACCOUNT_EXCEEDED;
             }
 
             int pendingForThisUserWithinLastSecond =
@@ -38,7 +38,7 @@ namespace GateKeeper.Server.Models
 
             if (pendingForThisUserWithinLastSecond > GateKeeper.PER_PHONE)
             {
-                return "Per User maximum exceeded";
+                return GateKeeper.PER_PHONE_EXCEEDED;
             }
 
             if (PendingMessagesPerUser.ContainsKey(userId))

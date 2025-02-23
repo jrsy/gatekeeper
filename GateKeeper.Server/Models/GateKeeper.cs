@@ -1,11 +1,11 @@
-using GateKeeper.Server.Models;
-
-namespace GateKeeper.Server
+namespace GateKeeper.Server.Models
 {
     public class GateKeeper
     {
         public static int PER_ACCOUNT = 20;
         public static int PER_PHONE = 5;
+        public static string PER_ACCOUNT_EXCEEDED = "Per Account maximum exceeded";
+        public static string PER_PHONE_EXCEEDED = "Per Phone maximum exceeded";
 
         Dictionary<Guid, Account> Accounts;
         Dictionary<Guid, AccountMessageQueue> MessageQueue;
@@ -15,7 +15,7 @@ namespace GateKeeper.Server
             Accounts = new Dictionary<Guid, Account>();
             MessageQueue = new Dictionary<Guid, AccountMessageQueue>();
 
-            Account account1 = new Account("Account 1");
+            /*Account account1 = new Account("Account 1");
             account1.AddUser("User 1.1", "111-1111");
             account1.AddUser("User 1.2", "112-1112");
             account1.AddUser("User 1.3", "113-1113");
@@ -24,7 +24,13 @@ namespace GateKeeper.Server
             account2.AddUser("User 2.1", "221-2221");
             account2.AddUser("User 2.2", "222-2222");
             Accounts.Add(account1.AccountId, account1);
-            Accounts.Add(account2.AccountId, account2);
+            Accounts.Add(account2.AccountId, account2);*/
+        }
+
+        public void AddAccount(Account newAccount)
+        {
+            Accounts.Add(newAccount.AccountId, newAccount);
+            MessageQueue.Add(newAccount.AccountId, new AccountMessageQueue(newAccount.AccountId));
         }
 
         public Account[] GetAccounts()
