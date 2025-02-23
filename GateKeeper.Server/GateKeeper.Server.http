@@ -1,0 +1,6 @@
+@GateKeeper.Server_HostAddress = http://localhost:5219
+
+GET {{GateKeeper.Server_HostAddress}}
+Accept: application/json
+
+###
