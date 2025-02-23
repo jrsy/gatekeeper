@@ -27,7 +27,7 @@ namespace GateKeeperTests
             Account account1 = new Account("Account 1");
             account1.AddUser("User 1.1", "111-1111");
 
-            var response = await client.PostAsJsonAsync("/gatekeeper/addaccount", account1);
+            var response = await client.PostAsJsonAsync("/gatekeeper/addaccounttest", account1);
             response.EnsureSuccessStatusCode();
 
             Guid userId = account1.Users[0].UserId;
@@ -72,7 +72,7 @@ namespace GateKeeperTests
 
             int limit = GateKeeper_t.PER_ACCOUNT * 2;
 
-            var postResponse = await client.PostAsJsonAsync("/gatekeeper/addaccount", account1);
+            var postResponse = await client.PostAsJsonAsync("/gatekeeper/addaccounttest", account1);
             postResponse.EnsureSuccessStatusCode();
 
             List<Message> messages = new List<Message>();
@@ -130,7 +130,7 @@ namespace GateKeeperTests
 
             int limit = GateKeeper_t.PER_PHONE * 2;
 
-            var postResponse = await client.PostAsJsonAsync("/gatekeeper/addaccount", account1);
+            var postResponse = await client.PostAsJsonAsync("/gatekeeper/addaccounttest", account1);
             postResponse.EnsureSuccessStatusCode();
 
             List<Message> messages = new List<Message>();

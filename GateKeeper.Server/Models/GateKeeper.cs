@@ -19,17 +19,6 @@ namespace GateKeeper.Server.Models
         {
             Accounts = new ConcurrentDictionary<Guid, Account>();
             MessageQueue = new ConcurrentDictionary<Guid, AccountMessageQueue>();
-
-            /*Account account1 = new Account("Account 1");
-            account1.AddUser("User 1.1", "111-1111");
-            account1.AddUser("User 1.2", "112-1112");
-            account1.AddUser("User 1.3", "113-1113");
-
-            Account account2 = new Account("Account 2");
-            account2.AddUser("User 2.1", "221-2221");
-            account2.AddUser("User 2.2", "222-2222");
-            Accounts.Add(account1.AccountId, account1);
-            Accounts.Add(account2.AccountId, account2);*/
         }
 
         // Really only necessary because of the TestSendMessage unit tests

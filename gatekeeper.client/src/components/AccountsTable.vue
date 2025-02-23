@@ -5,6 +5,11 @@
     </div>
 
     <div v-if="!loading">
+      <div>
+        <input v-model="newAccountName" placeholder="New Account Name"></input>
+        <button @click="addAccount">Add New Account</button>
+      </div>
+
       <div v-if="accounts" class="tableRow">
         <div class="tableColumn">
           <table id="accountTable">
@@ -28,13 +33,21 @@
         </div>
       </div>
 
+      <div id="userInfo">
+        <input v-model="newUserName" placeholder="New User Name"></input>
+        <input v-model="newUserNumber" placeholder="New User Number"></input>
+      </div>
+      <button v-if="selectedAccount" @click="addUser">Add User to Account</button>
+    </div>
+
       <div>
         <label v-if="selectedAccount">Currently selected account: {{ selectedAccount.accountName }}</label>
         <br />
         <label v-if="selectedUser">Currently selected user: {{ selectedUser.userName }} - {{ selectedUser.phoneNumber }}</label>
       </div>
     </div>
-  </div>
+
+    
 </template>
 
 <script lang="js">
@@ -47,7 +60,10 @@
               accounts: [],
               users: [],
               selectedAccount: null,
-              selectedUser: null
+              selectedUser: null,
+              newAccountName: "",
+              newUserName: "",
+              newUserNumber: ""
             };
         },
         async created() {
@@ -76,6 +92,38 @@
           },
           selectUser(userId) {
             this.selectedUser = this.users.find(u => u.userId === userId);
+          },
+          async addUser() {
+            if (!this.selectedAccount || this.newUserName.length === 0 || this.newUserNumber === 0) {
+              return;
+            }
+
+            await this.postRequest('gatekeeper/adduser', JSON.stringify({
+              accountId: this.selectedAccount.accountId,
+              userName: this.newUserName,
+              phoneNumber: this.newUserNumber
+            }));
+
+            this.newUserName = "";
+            this.newUserNumber = "";
+            await this.fetchData();
+          },
+          async addAccount() {
+            if (!this.newAccountName || this.newAccountName.length === 0) {
+              return;
+            }
+            await this.postRequest('gatekeeper/addaccount', JSON.stringify(this.newAccountName));
+            this.newAccountName = "";
+            await this.fetchData();
+          },
+          async postRequest(uri, data) {
+            const requestOptions = {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: data
+            };
+
+            await fetch(uri, requestOptions);
           }
         },
     });

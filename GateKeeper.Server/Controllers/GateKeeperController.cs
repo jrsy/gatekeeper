@@ -1,6 +1,6 @@
 using GateKeeper.Server.Models;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Http;
+using Newtonsoft.Json.Linq;
 
 namespace GateKeeper.Server.Controllers;
 
@@ -37,10 +37,34 @@ public class GateKeeperController : ControllerBase
     }
 
     [HttpPost]
-    [Route("addaccount")]
+    [Route("addaccounttest")]
     public int Post(Account account)
     {
         _gateKeeper.AddAccount(account);
+        return StatusCodes.Status200OK;
+    }
+
+    [HttpPost]
+    [Route("addaccount")]
+    public int Post([FromBody] string accountName)
+    {
+        Account account = new Account(accountName);
+        _gateKeeper.AddAccount(account);
+        return StatusCodes.Status200OK;
+    }
+
+    [HttpPost]
+    [Route("adduser")]
+    public int Post([FromBody] JObject data)
+    {
+        Guid accountId = data["accountId"].ToObject<Guid>();
+        string userName = data["userName"].ToObject<string>();
+        string phoneNumber = data["phoneNumber"].ToObject<string>();
+        Account account = _gateKeeper.GetAccount(accountId);
+
+        User newUser = new User(accountId, userName, phoneNumber);
+        account.AddUser(newUser);
+
         return StatusCodes.Status200OK;
     }
 

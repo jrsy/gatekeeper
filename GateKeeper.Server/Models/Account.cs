@@ -18,5 +18,11 @@ namespace GateKeeper.Server.Models
             User newUser = new User(AccountId, userName, phoneNumber);
             Users.Add(newUser);
         }
+
+        public void AddUser(User user)
+        {
+            User newUser = new User(AccountId, user.UserName, user.PhoneNumber);
+            Users.Add(newUser);
+        }
     }
 }
