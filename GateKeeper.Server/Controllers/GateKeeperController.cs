@@ -34,8 +34,8 @@ public class GateKeeperController : ControllerBase
     {
         Account account = _gateKeeper.GetAccount(accountId);
         User user = account.Users
-            .Where(u => u.Key == userId)
-            .Select(u => u.Value).First();
+            .Where(u => u.UserId == userId)
+            .Select(u => u).First();
         string response = _gateKeeper.AttemptSendSMSMessage(accountId, userId, message);
         if (response == String.Empty)
         {

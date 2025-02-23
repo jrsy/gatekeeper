@@ -1,0 +1,34 @@
+# Logs
+gatekeeper.client/logs
+*.log
+gatekeeper.client/npm-debug.log*
+gatekeeper.client/yarn-debug.log*
+gatekeeper.client/yarn-error.log*
+gatekeeper.client/pnpm-debug.log*
+gatekeeper.client/lerna-debug.log*
+
+gatekeeper.client/node_modules
+gatekeeper.client/.DS_Store
+gatekeeper.client/dist
+gatekeeper.client/dist-ssr
+gatekeeper.client/coverage
+*.local
+
+
+/cypress/videos/
+/cypress/screenshots/
+
+# Editor directories and files
+gatekeeper.client/.vscode/*
+gatekeeper.client/!.vscode/extensions.json
+gatekeeper.client/.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+*.tsbuildinfo
+gatekeeper.client/obj
+GateKeeper.Server/obj/
+.vs/
