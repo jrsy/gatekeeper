@@ -1,18 +1,19 @@
 using GateKeeper.Server.Controllers;
+using System.Collections.Concurrent;
 
 namespace GateKeeper.Server.Models
 {
     public class AccountMessageQueue
     {
         public Guid AccountId { get; set; }
-        public Dictionary<Guid, DateTime> MessageTimes;
-        public Dictionary<Guid, List<Message>> PendingMessagesPerUser;
+        public ConcurrentDictionary<Guid, DateTime> MessageTimes; // Keeps track of messages from entire account
+        public ConcurrentDictionary<Guid, List<Message>> PendingMessagesPerUser;
 
         public AccountMessageQueue(Guid accountId)
         {
             AccountId = accountId;
-            MessageTimes = new Dictionary<Guid, DateTime>();
-            PendingMessagesPerUser = new Dictionary<Guid, List<Message>>();
+            MessageTimes = new ConcurrentDictionary<Guid, DateTime>();
+            PendingMessagesPerUser = new ConcurrentDictionary<Guid, List<Message>>();
         }
 
         public string AttemptSendSMSMessage(Guid accountId, Guid userId, Message message)
@@ -28,13 +29,19 @@ namespace GateKeeper.Server.Models
                 return GateKeeper.PER_ACCOUNT_EXCEEDED;
             }
 
-            int pendingForThisUserWithinLastSecond =
+            List<Message>? pendingForThisUser =
                 PendingMessagesPerUser
                 .Where(pm => pm.Key == userId)
-                .Select(pm => pm.Value
-                    .Where(m => message.Timestamp.Subtract(m.Timestamp).Seconds < 1)
-                    .Select(m => m).ToList()
-                ).Count();
+                .Select(pm => pm.Value).FirstOrDefault();
+
+            int pendingForThisUserWithinLastSecond = 0;
+            if (pendingForThisUser != null)
+            {
+                pendingForThisUserWithinLastSecond =
+                    pendingForThisUser
+                    .Where(m => message.Timestamp.Subtract(m.Timestamp).TotalSeconds < 1)
+                    .Select(m => m).Count();
+            }
 
             if (pendingForThisUserWithinLastSecond > GateKeeper.PER_PHONE)
             {
@@ -47,31 +54,67 @@ namespace GateKeeper.Server.Models
             }
             else
             {
-                List<Message> newList = new List<Message> { message };
-                PendingMessagesPerUser.Add(userId, newList);
+                // This is mostly needed for the TestSendMessage unit test. In real life we'd call await
+                if (PendingMessagesPerUser.ContainsKey(userId))
+                {
+                    PendingMessagesPerUser[userId].Add(message);
+                }
+                else
+                {
+                    List<Message> newList = new List<Message> { message };
+                    PendingMessagesPerUser.AddOrUpdate(userId, newList, AddOrUpdatePendingMessagesPerUser);
+                }
             }
 
-            MessageTimes.Add(message.MessageId, message.Timestamp);
+            MessageTimes.AddOrUpdate(message.MessageId, message.Timestamp, AddOrUpdateMessageTimes);
 
             return String.Empty;
         }
 
-        public Message GetMessageFromQueue(Guid userId)
+        // Really only necessary because of the TestSendMessage unit tests
+        private DateTime AddOrUpdateMessageTimes(Guid messageId, DateTime timestamp)
         {
-            Message firstMessageUp =
+            return timestamp;
+        }
+
+        private List<Message> AddOrUpdatePendingMessagesPerUser(Guid userId, List<Message> newList)
+        {
+            return newList;
+        }
+
+        public Message? GetMessageFromQueue(Guid userId)
+        {
+            List<Message>? messageList =
                 PendingMessagesPerUser
                 .Where(pm => pm.Key == userId)
-                .Select(pm => pm.Value).First().Select(m => m).First();
-
-            PendingMessagesPerUser[userId].Remove(firstMessageUp);
-            if (!PendingMessagesPerUser[userId].Any())
+                .Select(pm => pm.Value).FirstOrDefault();
+            if (messageList == null || !messageList.Any())
             {
-                PendingMessagesPerUser.Remove(userId);
+                return null;
             }
 
-            MessageTimes.Remove(firstMessageUp.MessageId);
+            Message? firstMessageUp =
+                messageList.Select(m => m).FirstOrDefault();
+
+            if (firstMessageUp == null)
+            {
+                return firstMessageUp;
+            }
 
             return firstMessageUp;
+        }
+
+        public void RemoveMessageFromQueue(Message message)
+        {
+            PendingMessagesPerUser[message.UserId].Remove(message);
+            if (!PendingMessagesPerUser[message.UserId].Any())
+            {
+                List<Message> messages = new List<Message>() { };
+                PendingMessagesPerUser.Remove(message.UserId, out messages);
+            }
+
+            DateTime timestamp = message.Timestamp;
+            MessageTimes.Remove(message.MessageId, out timestamp);
         }
     }
 }

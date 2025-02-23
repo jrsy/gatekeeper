@@ -1,5 +1,6 @@
 using GateKeeper.Server.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http;
 
 namespace GateKeeper.Server.Controllers;
 
@@ -8,12 +9,11 @@ namespace GateKeeper.Server.Controllers;
 public class GateKeeperController : ControllerBase
 {
     private readonly ILogger<GateKeeperController> _logger;
-    private Models.GateKeeper _gateKeeper;
+    private static Models.GateKeeper _gateKeeper = new Models.GateKeeper();
 
     public GateKeeperController(ILogger<GateKeeperController> logger)
     {
         _logger = logger;
-        _gateKeeper = new Models.GateKeeper();
     }
 
     public void CallImaginaryExternalAPI(Message message)
@@ -24,13 +24,24 @@ public class GateKeeperController : ControllerBase
     [HttpGet]
     public Account[] Get()
     {
-        return _gateKeeper.GetAccounts();
+        Account[] accounts = _gateKeeper.GetAccounts();
+        return accounts;
+    }
+
+    [HttpPost]
+    [Route("addaccount")]
+    public int Post(Account account)
+    {
+        _gateKeeper.AddAccount(account);
+        return StatusCodes.Status200OK;
     }
 
     [HttpPost]
     [Route("sendmessage")]
-    public string Post(Guid accountId, Guid userId, Message message)
+    public string Post(Message message)
     {
+        Guid accountId = message.AccountId;
+        Guid userId = message.UserId;
         Account account = _gateKeeper.GetAccount(accountId);
         User user = account.Users
             .Where(u => u.UserId == userId)
@@ -39,17 +50,21 @@ public class GateKeeperController : ControllerBase
         if (response == String.Empty)
         {
             // Send immediately
-            Message firstMessageUp = _gateKeeper.GetMessageFromQueue(accountId, userId);
-            CallImaginaryExternalAPI(firstMessageUp);
-
-            if (firstMessageUp.MessageId != message.MessageId)
+            Message? firstMessageUp = _gateKeeper.GetMessageFromQueue(accountId, userId);
+            if (firstMessageUp == null || firstMessageUp.MessageId != message.MessageId)
             {
-                response = "Message queued.";
+                // Earlier message from same user - send that one first
+                response = Models.GateKeeper.MESSAGE_QUEUED;
             }
             else
             {
                 CallImaginaryExternalAPI(firstMessageUp);
-                response = "Message sent.";
+                if (firstMessageUp.SendImmediately)
+                {
+                    _gateKeeper.RemoveMessageFromQueue(firstMessageUp);
+                }
+                
+                response = Models.GateKeeper.MESSAGE_SENT;
             }
         }
 

@@ -8,6 +8,8 @@ namespace GateKeeper.Server.Models
 
         public string Data { get; set; }
         public DateTime Timestamp { get; set; }
+        // Used for tests purposes
+        public bool SendImmediately { get; set; }
 
         public Message(Guid accountId, Guid userId, string data)
         {
@@ -16,6 +18,7 @@ namespace GateKeeper.Server.Models
             UserId = userId;
             Data = data;
             Timestamp = DateTime.Now;
+            SendImmediately = true;
         }
     }
 }
