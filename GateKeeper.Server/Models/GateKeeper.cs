@@ -51,6 +51,22 @@ namespace GateKeeper.Server.Models
                 .Select(a => a.Value).First();
         }
 
+        public void removeUser(Guid accountId, Guid userId)
+        {
+            Account account = GetAccount(accountId);
+            User removedUser = account.Users.Where(u => u.UserId == userId).Select(u => u).First();
+            account.Users.Remove(removedUser);
+
+            // When user is removed, remove from account message queue as well
+            AccountMessageQueue accountMessageQueue =
+                MessageQueue
+                .Where(mq => mq.Key == accountId)
+                .Select(mq => mq.Value).First();
+
+            List<Message> messages = new List<Message>() { };
+            accountMessageQueue.PendingMessagesPerUser.Remove(userId, out messages);
+        }
+
         public string AttemptSendSMSMessage(Guid accountId, Guid userId, Message message)
         {
             AccountMessageQueue accountMessageQueue =

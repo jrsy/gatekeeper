@@ -55,7 +55,7 @@ public class GateKeeperController : ControllerBase
 
     [HttpPost]
     [Route("adduser")]
-    public int Post([FromBody] JObject data)
+    public int PostAddUser([FromBody] JObject data)
     {
         Guid accountId = data["accountId"].ToObject<Guid>();
         string userName = data["userName"].ToObject<string>();
@@ -70,8 +70,9 @@ public class GateKeeperController : ControllerBase
 
     [HttpPost]
     [Route("sendmessage")]
-    public string Post(Message message)
+    public string PostSendMessage([FromBody] JObject data)
     {
+        Message message = data["message"].ToObject<Message>();
         Guid accountId = message.AccountId;
         Guid userId = message.UserId;
         Account account = _gateKeeper.GetAccount(accountId);

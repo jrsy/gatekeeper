@@ -109,7 +109,7 @@ namespace GateKeeperTests
                     new Message(account1.AccountId, userId, ("Message" + i.ToString()));
                 messages.Add(message);
                 string testResult = testGateKeeper.AttemptSendSMSMessage(
-                    account1.AccountId, userId, messages[i]);
+                    account1.AccountId, userId, message);
             }
 
             for (int i = 0; i < messages.Count(); i++)
@@ -120,6 +120,38 @@ namespace GateKeeperTests
                 Assert.AreEqual(messages[i].MessageId, testResult.MessageId);
 
                 testGateKeeper.RemoveMessageFromQueue(testResult);
+            }
+        }
+
+        [TestMethod]
+        public void TestMessageCleanup()
+        {
+            GateKeeper_t testGateKeeper = new GateKeeper_t();
+            Account account1 = new Account("Account 1");
+            account1.AddUser("User 1.1", "111-1111");
+            testGateKeeper.AddAccount(account1);
+
+            Guid userId = account1.Users[0].UserId;
+            List<Message> messages = new List<Message>();
+
+            for (int i = 0; i < GateKeeper_t.PER_PHONE; i++)
+            {
+                Message message =
+                    new Message(account1.AccountId, userId, ("Message" + i.ToString()));
+                message.SendImmediately = false;
+                messages.Add(message);
+                string testResult = testGateKeeper.AttemptSendSMSMessage(
+                    account1.AccountId, userId, message);
+            }
+
+            testGateKeeper.removeUser(account1.AccountId, userId);
+
+            for (int i = 0; i < messages.Count(); i++)
+            {
+                Message? testResult = testGateKeeper.GetMessageFromQueue(
+                    account1.AccountId, userId);
+
+                Assert.AreEqual(null, testResult);
             }
         }
     }

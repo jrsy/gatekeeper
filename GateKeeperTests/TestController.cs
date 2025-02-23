@@ -1,9 +1,10 @@
 ﻿using GateKeeper.Server;
 using GateKeeper.Server.Models;
 using Microsoft.AspNetCore.Mvc.Testing;
-using System.Text.Json;
 using System.Net.Http.Json;
+using Newtonsoft.Json.Linq;
 using GateKeeper_t = GateKeeper.Server.Models.GateKeeper;
+using Newtonsoft.Json;
 
 namespace GateKeeperTests
 {
@@ -41,8 +42,16 @@ namespace GateKeeperTests
                 messages.Add(message);
             }
 
-            var response1 = await client.PostAsJsonAsync("/gatekeeper/sendmessage", messages[0]);
-            var response2 = await client.PostAsJsonAsync("/gatekeeper/sendmessage", messages[1]);
+            var response1 = await client.PostAsJsonAsync("/gatekeeper/sendmessage",
+                new
+                {
+                    message = messages[0]
+                });
+            var response2 = await client.PostAsJsonAsync("/gatekeeper/sendmessage",
+                new
+                {
+                    message = messages[1]
+                });
 
             response1.EnsureSuccessStatusCode();
             response2.EnsureSuccessStatusCode();
@@ -96,8 +105,11 @@ namespace GateKeeperTests
             for (int i = 0; i < messages.Count(); i++)
             {
                 Guid userId = messages[i].UserId;
-                var response = await client.PostAsJsonAsync("/gatekeeper/sendmessage", messages[i]);
-                responses.Add(response);
+                var response = await client.PostAsJsonAsync("/gatekeeper/sendmessage",
+                    new
+                    {
+                        message = messages[i]
+                    });
             }
 
             for (int i = 0; i < responses.Count(); i++)
@@ -154,7 +166,11 @@ namespace GateKeeperTests
             for (int i = 0; i < messages.Count(); i++)
             {
                 Guid userId = messages[i].UserId;
-                var response = await client.PostAsJsonAsync("/gatekeeper/sendmessage", messages[i]);
+                var response = await client.PostAsJsonAsync("/gatekeeper/sendmessage",
+                    new
+                    {
+                        message = messages[i]
+                    });
                 responses.Add(response);
             }
 
