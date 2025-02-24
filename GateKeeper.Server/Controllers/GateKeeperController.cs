@@ -11,6 +11,13 @@ public class GateKeeperController : ControllerBase
     private readonly ILogger<GateKeeperController> _logger;
     private static Models.GateKeeper _gateKeeper = new Models.GateKeeper();
 
+    public struct SendMessageResponse
+    {
+        public string Response;
+        public Guid MessageId;
+        public DateTime Timestamp;
+    }
+
     public GateKeeperController(ILogger<GateKeeperController> logger)
     {
         _logger = logger;
@@ -19,6 +26,7 @@ public class GateKeeperController : ControllerBase
     public void CallImaginaryExternalAPI(Message message)
     {
         // "Send" message
+        message.Sent = DateTime.Now;
     }
 
     [HttpGet]
@@ -38,24 +46,24 @@ public class GateKeeperController : ControllerBase
 
     [HttpPost]
     [Route("addaccounttest")]
-    public int Post(Account account)
+    public Guid Post(Account account)
     {
         _gateKeeper.AddAccount(account);
-        return StatusCodes.Status200OK;
+        return account.AccountId;
     }
 
     [HttpPost]
     [Route("addaccount")]
-    public int Post([FromBody] string accountName)
+    public Guid Post([FromBody] string accountName)
     {
         Account account = new Account(accountName);
         _gateKeeper.AddAccount(account);
-        return StatusCodes.Status200OK;
+        return account.AccountId;
     }
 
     [HttpPost]
     [Route("adduser")]
-    public int PostAddUser([FromBody] JObject data)
+    public Guid PostAddUser([FromBody] JObject data)
     {
         Guid accountId = data["accountId"].ToObject<Guid>();
         string userName = data["userName"].ToObject<string>();
@@ -65,20 +73,40 @@ public class GateKeeperController : ControllerBase
         User newUser = new User(accountId, userName, phoneNumber);
         account.AddUser(newUser);
 
+        return newUser.UserId;
+    }
+
+    [HttpPost]
+    [Route("removeuser")]
+    public int PostRemoveUser([FromBody] JObject data)
+    {
+        Guid accountId = data["accountId"].ToObject<Guid>();
+        Guid userId = data["userId"].ToObject<Guid>();
+        Account account = _gateKeeper.GetAccount(accountId);
+
+        _gateKeeper.removeUser(accountId, userId);
+
         return StatusCodes.Status200OK;
     }
 
     [HttpPost]
     [Route("sendmessage")]
-    public string PostSendMessage([FromBody] JObject data)
+    public SendMessageResponse PostSendMessage([FromBody] JObject data)
     {
         Message message = data["message"].ToObject<Message>();
+        if (message.GetType().GetProperty("MessageId") == null)
+        {
+            message.MessageId = Guid.NewGuid();
+        }
+        message.Timestamp = DateTime.Now;
+
         Guid accountId = message.AccountId;
         Guid userId = message.UserId;
         Account account = _gateKeeper.GetAccount(accountId);
         User user = account.Users
             .Where(u => u.UserId == userId)
             .Select(u => u).First();
+
         string response = _gateKeeper.AttemptSendSMSMessage(accountId, userId, message);
         if (response == String.Empty)
         {
@@ -101,6 +129,11 @@ public class GateKeeperController : ControllerBase
             }
         }
 
-        return response;
+        return new SendMessageResponse
+        {
+            Response = response,
+            MessageId = message.MessageId,
+            Timestamp = message.Timestamp
+        };
     }
 }

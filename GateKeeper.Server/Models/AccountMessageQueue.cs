@@ -1,5 +1,6 @@
 using GateKeeper.Server.Controllers;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 
 namespace GateKeeper.Server.Models
 {
@@ -8,12 +9,14 @@ namespace GateKeeper.Server.Models
         public Guid AccountId { get; set; }
         public ConcurrentDictionary<Guid, DateTime> MessageTimes; // Keeps track of messages from entire account
         public ConcurrentDictionary<Guid, List<Message>> PendingMessagesPerUser;
+        public ConcurrentDictionary<Guid, List<Message>> SentMessagesPerUser;
 
         public AccountMessageQueue(Guid accountId)
         {
             AccountId = accountId;
             MessageTimes = new ConcurrentDictionary<Guid, DateTime>();
             PendingMessagesPerUser = new ConcurrentDictionary<Guid, List<Message>>();
+            SentMessagesPerUser = new ConcurrentDictionary<Guid, List<Message>>();
         }
 
         public string AttemptSendSMSMessage(Guid accountId, Guid userId, Message message)
@@ -48,36 +51,41 @@ namespace GateKeeper.Server.Models
                 return GateKeeper.PER_PHONE_EXCEEDED;
             }
 
-            if (PendingMessagesPerUser.ContainsKey(userId))
-            {
-                PendingMessagesPerUser[userId].Add(message);
-            }
-            else
-            {
-                // This is mostly needed for the TestSendMessage unit test. In real life we'd call await
-                if (PendingMessagesPerUser.ContainsKey(userId))
-                {
-                    PendingMessagesPerUser[userId].Add(message);
-                }
-                else
-                {
-                    List<Message> newList = new List<Message> { message };
-                    PendingMessagesPerUser.AddOrUpdate(userId, newList, AddOrUpdatePendingMessagesPerUser);
-                }
-            }
+            AddOrUpdateMessagesPerUser(PendingMessagesPerUser, userId, message);
 
             MessageTimes.AddOrUpdate(message.MessageId, message.Timestamp, AddOrUpdateMessageTimes);
 
             return String.Empty;
         }
 
-        // Really only necessary because of the TestSendMessage unit tests
+        private void AddOrUpdateMessagesPerUser(ConcurrentDictionary<Guid, List<Message>> perUser, Guid userId, Message message)
+        {
+            if (perUser.ContainsKey(userId))
+            {
+                perUser[userId].Add(message);
+            }
+            else
+            {
+                // This is mostly needed for the TestSendMessage unit test. In real life we'd call await
+                if (perUser.ContainsKey(userId))
+                {
+                    perUser[userId].Add(message);
+                }
+                else
+                {
+                    List<Message> newList = new List<Message> { message };
+                    perUser.AddOrUpdate(userId, newList, AddOrUpdateMessagesPerUserPlaceholder);
+                }
+            }
+        }
+
+        // Placeholder for unit tests and front end tests
         private DateTime AddOrUpdateMessageTimes(Guid messageId, DateTime timestamp)
         {
             return timestamp;
         }
 
-        private List<Message> AddOrUpdatePendingMessagesPerUser(Guid userId, List<Message> newList)
+        private List<Message> AddOrUpdateMessagesPerUserPlaceholder(Guid userId, List<Message> newList)
         {
             return newList;
         }
@@ -115,6 +123,11 @@ namespace GateKeeper.Server.Models
 
             DateTime timestamp = message.Timestamp;
             MessageTimes.Remove(message.MessageId, out timestamp);
+
+            if (message.Sent != null)
+            {
+                AddOrUpdateMessagesPerUser(SentMessagesPerUser, message.UserId, message);
+            }
         }
     }
 }

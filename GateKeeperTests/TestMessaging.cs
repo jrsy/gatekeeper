@@ -11,12 +11,12 @@ namespace GateKeeperTests
         {
             GateKeeper_t testGateKeeper = new GateKeeper_t();
             Account account1 = new Account("Account 1");
-            account1.AddUser("User 1.1", "111-1111");
-            account1.AddUser("User 1.2", "111-1112");
-            account1.AddUser("User 1.3", "111-1113");
-            account1.AddUser("User 1.4", "111-1114");
-            account1.AddUser("User 1.5", "111-1115");
-            account1.AddUser("User 1.6", "111-1116");
+            int usersToGenerate = GateKeeper_t.PER_ACCOUNT / GateKeeper_t.PER_PHONE;
+
+            for (int i = 0; i < usersToGenerate; i++)
+            {
+                account1.AddUser("User " + i.ToString(), i.ToString());
+            }
             testGateKeeper.AddAccount(account1);
 
             int userIndex = 0;

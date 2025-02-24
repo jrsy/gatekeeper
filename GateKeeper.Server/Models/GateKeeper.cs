@@ -4,8 +4,8 @@ namespace GateKeeper.Server.Models
 {
     public class GateKeeper
     {
-        public static int PER_ACCOUNT = 20;
-        public static int PER_PHONE = 5;
+        public static int PER_ACCOUNT = 200;
+        public static int PER_PHONE = 50;
         public static string PER_ACCOUNT_EXCEEDED = "Per Account maximum exceeded";
         public static string PER_PHONE_EXCEEDED = "Per Phone maximum exceeded";
         public static string MESSAGE_QUEUED = "Message queued.";

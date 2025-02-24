@@ -5,6 +5,7 @@ using System.Net.Http.Json;
 using Newtonsoft.Json.Linq;
 using GateKeeper_t = GateKeeper.Server.Models.GateKeeper;
 using Newtonsoft.Json;
+using GateKeeper.Server.Controllers;
 
 namespace GateKeeperTests
 {
@@ -56,8 +57,15 @@ namespace GateKeeperTests
             response1.EnsureSuccessStatusCode();
             response2.EnsureSuccessStatusCode();
             
-            string responseString1 = await response1.Content.ReadAsStringAsync();
-            string responseString2 = await response2.Content.ReadAsStringAsync();
+            string resultString = await response1.Content.ReadAsStringAsync();
+            GateKeeperController.SendMessageResponse productResult =
+                JsonConvert.DeserializeObject<GateKeeperController.SendMessageResponse>(resultString);
+            string responseString1 = productResult.Response;
+
+            resultString = await response2.Content.ReadAsStringAsync();
+            productResult =
+                JsonConvert.DeserializeObject<GateKeeperController.SendMessageResponse>(resultString);
+            string responseString2 = productResult.Response;
 
             Assert.AreEqual(GateKeeper_t.MESSAGE_SENT, responseString1);
             Assert.AreEqual(GateKeeper_t.MESSAGE_QUEUED, responseString2);
@@ -116,7 +124,10 @@ namespace GateKeeperTests
             {
                 var result = responses[i];
                 result.EnsureSuccessStatusCode();
-                string responseString = await result.Content.ReadAsStringAsync();
+                string resultString = await result.Content.ReadAsStringAsync();
+                GateKeeperController.SendMessageResponse productResult =
+                    JsonConvert.DeserializeObject<GateKeeperController.SendMessageResponse>(resultString);
+                string responseString = productResult.Response;
 
                 if (i <= GateKeeper_t.PER_ACCOUNT)
                 {
@@ -137,6 +148,64 @@ namespace GateKeeperTests
 
             Account account1 = new Account("Account 1");
             account1.AddUser("User 1.1", "111-1111");
+
+            Guid userId = account1.Users[0].UserId;
+
+            int limit = GateKeeper_t.PER_PHONE * 2;
+
+            var postResponse = await client.PostAsJsonAsync("/gatekeeper/addaccounttest", account1);
+            postResponse.EnsureSuccessStatusCode();
+
+            List<Message> messages = new List<Message>();
+
+            for (int i = 0; i < limit; i++)
+            {
+                Message message =
+                    new Message(account1.AccountId, userId, ("Message" + i.ToString()));
+                message.SendImmediately = false;
+                messages.Add(message);
+            }
+
+            List<HttpResponseMessage?> responses = new List<HttpResponseMessage?>();
+            for (int i = 0; i < messages.Count(); i++)
+            {
+                var response = await client.PostAsJsonAsync("/gatekeeper/sendmessage",
+                    new
+                    {
+                        message = messages[i]
+                    });
+                responses.Add(response);
+            }
+
+            for (int i = 0; i < responses.Count(); i++)
+            {
+                var result = responses[i];
+                result.EnsureSuccessStatusCode();
+                string resultString = await result.Content.ReadAsStringAsync();
+                GateKeeperController.SendMessageResponse productResult =
+                    JsonConvert.DeserializeObject<GateKeeperController.SendMessageResponse>(resultString);
+                string responseString = productResult.Response;
+
+                if (i <= GateKeeper_t.PER_PHONE)
+                {
+                    Assert.AreNotEqual(GateKeeper_t.PER_PHONE_EXCEEDED, responseString);
+                }
+                else
+                {
+                    Assert.AreEqual(GateKeeper_t.PER_PHONE_EXCEEDED, responseString);
+                }
+            }
+        }
+
+        [TestMethod]
+        public async Task TestRemoveUser()
+        {
+            WebApplicationFactory<Program> factory = new WebApplicationFactory<Program>();
+            var client = factory.CreateClient();
+
+            Account account1 = new Account("Account 1");
+            account1.AddUser("User 1.1", "111-1111");
+            account1.AddUser("User 1.2", "112-1112");
 
             int userIndex = 0;
 
@@ -174,21 +243,13 @@ namespace GateKeeperTests
                 responses.Add(response);
             }
 
-            for (int i = 0; i < responses.Count(); i++)
-            {
-                var result = responses[i];
-                result.EnsureSuccessStatusCode();
-                string responseString = await result.Content.ReadAsStringAsync();
-
-                if (i <= GateKeeper_t.PER_PHONE)
+            postResponse = await client.PostAsJsonAsync("/gatekeeper/removeuser",
+                new
                 {
-                    Assert.AreNotEqual(GateKeeper_t.PER_PHONE_EXCEEDED, responseString);
-                }
-                else
-                {
-                    Assert.AreEqual(GateKeeper_t.PER_PHONE_EXCEEDED, responseString);
-                }
-            }
+                    accountId = account1.AccountId,
+                    userId = account1.Users[0].UserId
+                });
+            postResponse.EnsureSuccessStatusCode();
         }
     }
 }

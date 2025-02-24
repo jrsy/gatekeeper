@@ -40,14 +40,50 @@
       <button v-if="selectedAccount" @click="addUser">Add User to Account</button>
     </div>
 
-      <div>
-        <label v-if="selectedAccount">Currently selected account: {{ selectedAccount.accountName }}</label>
+    <div>
+      <label v-if="selectedAccount">Currently selected account: {{ selectedAccount.accountName }}</label>
+      <div v-if="selectedUser">
         <br />
         <label v-if="selectedUser">Currently selected user: {{ selectedUser.userName }} - {{ selectedUser.phoneNumber }}</label>
+        <br />
+        <input v-model="newUserMessage" placeholder="New User Message"></input>
+        <br />
+        <button v-if="showSendButtons()" @click="addMessages(10)">Add message to queue 10 times</button>
+        <button v-if="showSendButtons()" @click="addMessages(100)">Add message to queue 100 times</button>
+        <button v-if="showSendButtons()" @click="addMessages(1000)">Add message to queue 1000 times</button>
+        <button v-if="showSendButtons()" @click="addMessages(10000)">Add message to queue 10000 times</button>
       </div>
     </div>
+  </div>
 
-    
+  <div v-if="accounts" class="tableRow">
+    <div class="tableColumn">
+      <table id="pendingTable">
+        <thead>Pending Messages</thead>
+        <tbody>
+          <tr v-for="message in pendingMessages">
+            <td>{{ message.accountName }}</td>
+            <td>{{ message.userName }}</td>
+            <td>{{ message.Data }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="tableColumn">
+      <table id="sentTable">
+        <thead>Sent Messages</thead>
+        <tbody>
+          <tr v-for="message in sentMessages">
+            <td>{{ message.response }}</td>
+            <td>{{ message.userName }}</td>
+            <td>{{ message.timestamp }}</td>
+            <td>{{ message.messageId }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <button v-if="showSendMessages()" @click="sendMessages">Send all messages</button>
 </template>
 
 <script lang="js">
@@ -63,7 +99,10 @@
               selectedUser: null,
               newAccountName: "",
               newUserName: "",
-              newUserNumber: ""
+              newUserNumber: "",
+              newUserMessage: "",
+              pendingMessages: [],
+              sentMessages: []
             };
         },
         async created() {
@@ -84,6 +123,12 @@
               this.accounts = await response.json();
               this.loading = false;
             }
+          },
+          showSendButtons() {
+            return this.newUserMessage.length > 0;
+          },
+          showSendMessages() {
+            return this.pendingMessages.length > 0;
           },
           selectAccount(accountId) {
             this.selectedAccount = this.accounts.find(a => a.accountId === accountId);
@@ -107,6 +152,8 @@
             this.newUserName = "";
             this.newUserNumber = "";
             await this.fetchData();
+
+            this.selectAccount(this.selectedAccount.accountId);
           },
           async addAccount() {
             if (!this.newAccountName || this.newAccountName.length === 0) {
@@ -115,6 +162,43 @@
             await this.postRequest('gatekeeper/addaccount', JSON.stringify(this.newAccountName));
             this.newAccountName = "";
             await this.fetchData();
+            this.selectedAccount = null;
+          },
+          addMessages(no_of_msgs) {
+            var accountId = this.selectedAccount.accountId;
+            var userId = this.selectedUser.userId;
+            var message = {
+              AccountId: accountId,
+              UserId: userId,
+              Data: this.newUserMessage,
+              SendImmediately: true,
+              accountName: this.selectedAccount.accountName,
+              userName: this.selectedUser.userName,
+            };
+
+            for (var i = 0; i < no_of_msgs; i++) {
+              this.pendingMessages.push(message);
+            }
+
+            this.newUserMessage = "";
+          },
+          async sendMessages() {
+            this.pendingMessages.forEach(async message => {
+              var response = await this.postRequest('gatekeeper/sendmessage', JSON.stringify({
+                message: message
+              }));
+              var result = await response.json();
+              var sentMessage = {
+                accountName: message.accountName,
+                userName: message.userName,
+                response: result.response,
+                messageId: result.messageId,
+                timestamp: new Date(result.timestamp).toLocaleString()
+              }
+              this.sentMessages.push(sentMessage);
+            });
+
+            this.pendingMessages = [];
           },
           async postRequest(uri, data) {
             const requestOptions = {
@@ -123,7 +207,11 @@
               body: data
             };
 
-            await fetch(uri, requestOptions);
+            var response = await fetch(uri, requestOptions);
+            if (response.ok) {
+              return response;
+              
+            }
           }
         },
     });
